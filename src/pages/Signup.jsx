@@ -36,35 +36,60 @@ export default function Signup() {
   }
 
   const handleSignup = async (e) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    setLoading(true);
-    setError("");
-    setMessage("");
+  setLoading(true);
+  setError("");
+  setMessage("");
 
-    try {
-      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-        throw new Error("Supabase environment variables are missing.");
-      }
+  try {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      throw new Error("Supabase environment variables are missing.");
+    }
 
-      const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: SUPABASE_ANON_KEY,
-          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+    const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({
+        email: form.email.trim(),
+        password: form.password,
+        data: {
+          username: form.username.trim(),
+          display_name: form.displayName.trim(),
+          discord: form.discord.trim(),
+          twitch_login: form.twitchLogin.trim(),
         },
-        body: JSON.stringify({
-          email: form.email.trim(),
-          password: form.password,
-          data: {
-            username: form.username.trim(),
-            display_name: form.displayName.trim(),
-            discord: form.discord.trim(),
-            twitch_login: form.twitchLogin.trim(),
-          },
-        }),
-      });
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(
+        "Signup failed. This email may already exist, or Supabase rejected the request."
+      );
+    }
+
+    setMessage(
+      "Account created. Check your email if confirmation is required, then log in."
+    );
+
+    setForm({
+      email: "",
+      password: "",
+      username: "",
+      displayName: "",
+      discord: "",
+      twitchLogin: "",
+    });
+  } catch (err) {
+    setError(err.message || "Signup failed.");
+  } finally {
+    setLoading(false);
+  }
+};
 
       const data = await readResponseOnce(response);
 
