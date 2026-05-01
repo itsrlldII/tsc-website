@@ -23,32 +23,28 @@ export default function Signup() {
 
   const handleSignup = async (e) => {
     e.preventDefault();
+
     setLoading(true);
     setError("");
     setMessage("");
 
     try {
-      const { data, error: signupError } = await supabase.auth.signUp({
-        email: form.email,
+      const { error: signupError } = await supabase.auth.signUp({
+        email: form.email.trim(),
         password: form.password,
+        options: {
+          data: {
+            username: form.username.trim(),
+            display_name: form.displayName.trim(),
+            discord: form.discord.trim(),
+            twitch_login: form.twitchLogin.trim(),
+          },
+          emailRedirectTo: `${window.location.origin}/login`,
+        },
       });
 
-      if (signupError) throw signupError;
-
-      const user = data.user;
-
-      if (user) {
-        const { error: profileError } = await supabase.from("profiles").insert({
-          id: user.id,
-          username: form.username,
-          display_name: form.displayName,
-          discord: form.discord,
-          twitch_login: form.twitchLogin,
-          role: "recruit",
-          status: "pending",
-        });
-
-        if (profileError) throw profileError;
+      if (signupError) {
+        throw signupError;
       }
 
       setMessage(
