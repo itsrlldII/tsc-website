@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, UserPlus } from "lucide-react";
-import { supabase } from "../lib/supabase";
+
+const SUPABASE_URL = process.env.REACT_APP_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.REACT_APP_SUPABASE_ANON_KEY;
 
 export default function Signup() {
   const [form, setForm] = useState({
@@ -21,6 +23,18 @@ export default function Signup() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
+  async function readResponseOnce(response) {
+    const text = await response.text();
+
+    if (!text) return {};
+
+    try {
+      return JSON.parse(text);
+    } catch {
+      return { message: text };
+    }
+  }
+
   const handleSignup = async (e) => {
     e.preventDefault();
 
@@ -29,22 +43,39 @@ export default function Signup() {
     setMessage("");
 
     try {
-      const { error: signupError } = await supabase.auth.signUp({
-        email: form.email.trim(),
-        password: form.password,
-        options: {
+      if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+        throw new Error("Supabase environment variables are missing.");
+      }
+
+      const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: SUPABASE_ANON_KEY,
+          Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({
+          email: form.email.trim(),
+          password: form.password,
           data: {
             username: form.username.trim(),
             display_name: form.displayName.trim(),
             discord: form.discord.trim(),
             twitch_login: form.twitchLogin.trim(),
           },
-          emailRedirectTo: `${window.location.origin}/login`,
-        },
+        }),
       });
 
-      if (signupError) {
-        throw signupError;
+      const data = await readResponseOnce(response);
+
+      if (!response.ok) {
+        throw new Error(
+          data.msg ||
+            data.message ||
+            data.error_description ||
+            data.error ||
+            "Signup failed."
+        );
       }
 
       setMessage(
